@@ -1,0 +1,5 @@
+services:
+  opencv-dev:
+    build: .
+    container_name: opencv-dev
+    tty: true
