@@ -1,5 +1,14 @@
 services:
-  opencv-dev:
-    build: .
-    container_name: opencv-dev
+  dev:
+    restart: always
+    image: snomura07/docker-opencv-dev
+    environment:
+      - TZ=Asia/Tokyo
+      - DISPLAY=${DISPLAY}  # WSLのDISPLAY変数をコンテナに渡す
+
+    container_name: 'tron_dev'
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix  # X11ソケットを共有
+
+    command: bash
     tty: true

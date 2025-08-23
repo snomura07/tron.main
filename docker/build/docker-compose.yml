@@ -1,5 +1,4 @@
 services:
-  opencv-dev:
+  dev:
     build: .
-    container_name: opencv-dev-build
-    tty: true
+    image: tron_base_img
