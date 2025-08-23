@@ -1,7 +1,7 @@
 services:
   dev:
     restart: always
-    image: snomura07/docker-opencv-dev
+    image: snomura07/tron_base_img
     environment:
       - TZ=Asia/Tokyo
       - DISPLAY=${DISPLAY}  # WSLのDISPLAY変数をコンテナに渡す
