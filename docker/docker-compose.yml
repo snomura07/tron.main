@@ -8,6 +8,8 @@ services:
 
     container_name: 'tron_dev'
     volumes:
+      - ../src:/opt/tron/src
+      - ../bin:/opt/tron/bin
       - /tmp/.X11-unix:/tmp/.X11-unix  # X11ソケットを共有
 
     command: bash
