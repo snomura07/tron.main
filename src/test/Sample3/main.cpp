@@ -1,5 +1,11 @@
 #include <SFML/Graphics.hpp>
+#include <thread>
+#include <chrono>
 #include <cmath>
+#include <common/utils/print.hpp>
+#include <common/utils/str.hpp>
+
+bool isRunning = true;
 
 // サーキット形状クラス（長方形＋上下半円）
 class OvalTrackShape : public sf::Drawable {
@@ -26,7 +32,7 @@ public:
         bottom.setOrigin(radius, radius);
         bottom.setPosition(0, (height / 2.f - radius));
 
-        group.setPosition(200, 100); // 初期位置
+        group.setPosition(0, 0); // 初期位置
     }
 
     void setPosition(sf::Vector2f pos) { group.setPosition(pos); }
@@ -46,10 +52,79 @@ private:
     }
 };
 
+using fScalar = float;
+using fVector = struct {
+    fScalar x, y;
+};
+fScalar toRad(fScalar deg) {
+    return deg * 3.14159265f / 180.f;
+}
+
+class EyeObj {
+public:
+    EyeObj(OvalTrackShape &oval, fVector position, fScalar velocity, fScalar angle): oval(oval), position(position) {
+        setVelocity(velocity, angle);
+    }
+
+    void setVelocity(fScalar velocity, fScalar deg) {
+        this->velocity.x = velocity * std::cos(toRad(deg));
+        this->velocity.y = velocity * std::sin(toRad(deg));
+        this->angle = deg;
+    }
+
+    void update(float dt) {
+        fVector deltaPos = {velocity.x * dt, velocity.y * dt};
+        position.x += deltaPos.x;
+        position.y += deltaPos.y;
+        oval.setPosition({position.x, position.y});
+    }
+
+    fVector getPosition() {
+        return position;
+    }
+
+    OvalTrackShape &getOval() {
+        return oval;
+    }
+
+private:
+    OvalTrackShape &oval;
+    fVector position;
+    fVector velocity;
+    fScalar angle;
+};
+
 int main() {
     sf::RenderWindow window(sf::VideoMode(400, 400), "OvalTrack with Wobble");
+    sf::VertexArray grid(sf::Lines);
+    grid.append(sf::Vertex(sf::Vector2f(10, 10), sf::Color::Red));
+    grid.append(sf::Vertex(sf::Vector2f(60, 10), sf::Color::Red));
+    grid.append(sf::Vertex(sf::Vector2f(60, 10), sf::Color::Red));
+    grid.append(sf::Vertex(sf::Vector2f(55, 5), sf::Color::Red));
+    grid.append(sf::Vertex(sf::Vector2f(60, 10), sf::Color::Red));
+    grid.append(sf::Vertex(sf::Vector2f(55, 15), sf::Color::Red));
+
+    grid.append(sf::Vertex(sf::Vector2f(10, 10), sf::Color::Green));
+    grid.append(sf::Vertex(sf::Vector2f(10, 60), sf::Color::Green));
+    grid.append(sf::Vertex(sf::Vector2f(10, 60), sf::Color::Green));
+    grid.append(sf::Vertex(sf::Vector2f(15, 55), sf::Color::Green));
+    grid.append(sf::Vertex(sf::Vector2f(10, 60), sf::Color::Green));
+    grid.append(sf::Vertex(sf::Vector2f(5 , 55), sf::Color::Green));
+
 
     OvalTrackShape oval(60.f, 100.f, sf::Color::Cyan);
+    OvalTrackShape rightEye(60.f, 100.f, sf::Color::Cyan);
+    EyeObj rightEyeObj(rightEye, {300.0,100.f}, 0.f, 0.f);
+    rightEyeObj.setVelocity(0.f, 90.f);
+
+    std::thread th([&rightEyeObj](){
+        while(isRunning) {
+            rightEyeObj.update(0.01);
+
+            print("rightEye pos: ", rightEyeObj.getPosition().x, ", ", rightEyeObj.getPosition().y);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    });
 
     float velocityY = 0.f;
     const float gravity = 980.f;
@@ -69,8 +144,10 @@ int main() {
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
+            if (event.type == sf::Event::Closed){
+                isRunning = false;
                 window.close();
+            }
         }
 
         float dt = clock.restart().asSeconds();
@@ -110,9 +187,13 @@ int main() {
         }
 
         window.clear(sf::Color::Black);
-        window.draw(oval);
+        // window.draw(oval);
+        window.draw(grid);
+        window.draw(rightEyeObj.getOval());
+
         window.display();
     }
 
+    th.join();
     return 0;
 }
